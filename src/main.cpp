@@ -139,7 +139,7 @@ double uniformRand() {
 int main() {
   srand(time(nullptr));
 
-  Reallocator<SillyData> reallocator;
+  Reallocator<SillyData> fastAllocator;
   NormalAllocator<SillyData> normalAllocator;
 
   const size_t TRIAL_COUNT = 10000;
@@ -161,18 +161,18 @@ int main() {
       }
     }
 
-    auto reallocatorStart = std::chrono::steady_clock::now();
-    performSim(reallocator, actions);
-    auto reallocatorStop = std::chrono::steady_clock::now();
+    auto fastAllocatorStart = std::chrono::steady_clock::now();
+    performSim(fastAllocator, actions);
+    auto fastAllocatorStop = std::chrono::steady_clock::now();
 
     auto normalAllocatorStart = std::chrono::steady_clock::now();
     performSim(normalAllocator, actions);
     auto normalAllocatorStop = std::chrono::steady_clock::now();
 
-    auto reallocatorTime = reallocatorStop - reallocatorStart;
+    auto fastAllocatorTime = fastAllocatorStop - fastAllocatorStart;
     auto normalAllocatorTime = normalAllocatorStop - normalAllocatorStart;
 
-    auto diff = normalAllocatorTime - reallocatorTime;
+    auto diff = normalAllocatorTime - fastAllocatorTime;
     diffs[i] = diff;
   }
 
