@@ -1,5 +1,5 @@
 default:
-	g++ -o reallocator -fsanitize=address -std=c++17 src/main.cpp
+	g++ -o reallocator -std=c++17 -O3 src/main.cpp
 
 run: default
 	./reallocator
