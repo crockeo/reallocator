@@ -5,7 +5,7 @@
 #include <vector>
 
 const size_t TRIAL_COUNT = 100;
-const size_t SILLY_DATA_COUNT = 10000000;
+const size_t SILLY_DATA_COUNT = 10000;
 
 template <typename T>
 struct ReallocatorNode {
@@ -21,8 +21,17 @@ public:
     this->tail = nullptr;
   }
 
+  ~ReallocatorQueue() {
+    for (auto spareNode : spareNodes) {
+      delete spareNode;
+    }
+  }
+
+  ReallocatorQueue(const ReallocatorQueue&&) = delete;
+  ReallocatorQueue operator=(const ReallocatorQueue&&) = delete;
+
   void enqueue(T* value) {
-    auto next = new ReallocatorNode<T>();
+    auto next = this->newNode();
     next->next = nullptr;
     next->value = value;
 
@@ -41,7 +50,7 @@ public:
     auto value = head->value;
     this->head = this->head->next;
 
-    delete head;
+    spareNodes.push_back(head);
 
     return value;
   }
@@ -53,6 +62,22 @@ public:
 private:
   ReallocatorNode<T> *head;
   ReallocatorNode<T> *tail;
+
+  std::vector<ReallocatorNode<T> *> spareNodes;
+
+  ReallocatorNode<T> *newNode() {
+    if (spareNodes.size() == 0) {
+      return new ReallocatorNode<T>();
+    }
+
+    auto spareNode = spareNodes.back();
+    spareNodes.pop_back();
+
+    spareNode->next = nullptr;
+    spareNode->value = nullptr;
+
+    return spareNode;
+  }
 };
 
 template <typename T>
@@ -175,7 +200,8 @@ double uniformRand() {
 int main() {
   srand(time(nullptr));
 
-  ArenaAllocator<SillyData> fastAllocator(SILLY_DATA_COUNT);
+  // ArenaAllocator<SillyData> fastAllocator(SILLY_DATA_COUNT);
+  Reallocator<SillyData> fastAllocator;
   NormalAllocator<SillyData> normalAllocator;
 
   std::vector<std::chrono::steady_clock::duration> diffs;
