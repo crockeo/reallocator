@@ -4,6 +4,9 @@
 #include <iostream>
 #include <vector>
 
+const size_t TRIAL_COUNT = 100;
+const size_t SILLY_DATA_COUNT = 10000000;
+
 template <typename T>
 struct ReallocatorNode {
   ReallocatorNode *next;
@@ -101,6 +104,39 @@ public:
   }
 };
 
+template <typename T>
+class ArenaAllocator : public Allocator<T> {
+public:
+  ArenaAllocator(size_t maxCount) {
+    this->values.resize(maxCount);
+    this->openValues.resize(maxCount);
+
+    for (size_t i = 0; i < maxCount; i++) {
+      this->openValues[i] = i;
+    }
+  }
+
+  T* alloc() {
+    if (this->openValues.size() == 0) {
+      return nullptr;
+    }
+
+    size_t i = openValues.back();
+    openValues.pop_back();
+
+    return &values[i];
+  }
+
+  void free(T* value) {
+    size_t location = (value - &values[0]) / sizeof(T);
+    openValues.push_back(location);
+  }
+
+private:
+  std::vector<T> values;
+  std::vector<size_t> openValues;
+};
+
 struct SillyData {
   uint64_t pieces[100];
 };
@@ -128,7 +164,7 @@ void performSim(Allocator<SillyData>& allocator, const std::vector<SimAction>& a
   }
 
   for (SillyData *value : values) {
-    delete value;
+    allocator.free(value);
   }
 }
 
@@ -139,11 +175,8 @@ double uniformRand() {
 int main() {
   srand(time(nullptr));
 
-  Reallocator<SillyData> fastAllocator;
+  ArenaAllocator<SillyData> fastAllocator(SILLY_DATA_COUNT);
   NormalAllocator<SillyData> normalAllocator;
-
-  const size_t TRIAL_COUNT = 10000;
-  const size_t SILLY_DATA_COUNT = 1000;
 
   std::vector<std::chrono::steady_clock::duration> diffs;
   diffs.resize(TRIAL_COUNT);
